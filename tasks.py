@@ -10,9 +10,6 @@ from enum import IntEnum, Enum, unique
 import traceback
 
 import numpy
-from scipy.ndimage.filters import gaussian_filter
-from scipy import interpolate
-import scipy.fftpack as sfft
 import math
 from io import StringIO, BytesIO
 import base64
@@ -61,6 +58,19 @@ def task_largefilestore(self, fulldata, metadata):
 
 	return 0
 
+
+
+@celery.task(bind=True, name='mira.detect')
+def task_detect(self, userinfo, imageinfo):
+
+
+
+
+
+
+
+	
+	return 0
 
 
 
