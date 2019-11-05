@@ -38,7 +38,11 @@ MONGO_PWD  = os.environ['MONGO_PWD']
 MONGO_HOST = os.environ['MONGO_HOST']
 MONGO_DB = os.environ['MONGO_DB']
 
-db = MongoClient('mongodb://{}:{}@{}'.format(MONGO_USER, MONGO_PWD, MONGO_HOST))[MONGO_DB]
+db = MongoClient(MONGO_HOST,
+		username=MONGO_USER,
+		password=MONGO_PWD,
+		authSource=MONGO_DB,
+)[MONGO_DB]
 fs = gridfs.GridFS(db)
 
 
