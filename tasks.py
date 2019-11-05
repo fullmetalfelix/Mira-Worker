@@ -44,9 +44,6 @@ fs = gridfs.GridFS(db)
 
 MAX_ARCH_SIZE = 12582912
 
-DETECTOR = None
-
-
 
 @celery.task(bind=True, name='mira.detect')
 def task_detect(self, userinfo, imageinfo):
@@ -207,24 +204,22 @@ def MegaScan(image):
 			imgMS = imgMS[:,:,0:3]
 
 	
-	if DETECTOR == None:
 
-		print('loading TF...')
+	print('loading TF...')
+	import tensorflow as tf
+	
+	tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+	os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-		import tensorflow as tf
-		
-		tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-		os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-		# LOADS THE MS MEGADETECTOR
-		DETECTOR = tf.compat.v1.Graph()
-		with DETECTOR.as_default():
-			od_graph_def = tf.compat.v1.GraphDef()
-			with tf.io.gfile.GFile('./models/megadetector_v3.pb', 'rb') as fid:
-				serialized_graph = fid.read()
-				od_graph_def.ParseFromString(serialized_graph)
-				tf.import_graph_def(od_graph_def, name='')
-		print('detector loaded!')
+	# LOADS THE MS MEGADETECTOR
+	DETECTOR = tf.compat.v1.Graph()
+	with DETECTOR.as_default():
+		od_graph_def = tf.compat.v1.GraphDef()
+		with tf.io.gfile.GFile('./models/megadetector_v3.pb', 'rb') as fid:
+			serialized_graph = fid.read()
+			od_graph_def.ParseFromString(serialized_graph)
+			tf.import_graph_def(od_graph_def, name='')
+	print('detector loaded!')
 
 
 	boxes,scores,classes,images = generate_detections(DETECTOR, imgMS)
