@@ -15,7 +15,7 @@ from io import StringIO, BytesIO
 import base64
 
 import tensorflow as tf
-
+from PIL import Image
 
 
 REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
