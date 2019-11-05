@@ -9,7 +9,7 @@ from datetime import datetime
 from enum import IntEnum, Enum, unique
 import traceback
 
-import numpy
+import numpy as np
 import math
 from io import StringIO, BytesIO
 import base64
@@ -56,8 +56,11 @@ def task_detect(self, userinfo, imageinfo):
 
 	# code here means the image is still there most likely
 	# store crops in the database
+	edits = {'crops': crops}
+	if len(crops) == 0: edits['phase'] = -10
+
 	db.images.update_one({'_id': imageinfo['_id']},
-		{'$set': {'crops': crops}}
+		{'$set': edits}
 	)
 
 	return 0
