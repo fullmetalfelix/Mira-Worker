@@ -44,7 +44,7 @@ fs = gridfs.GridFS(db)
 
 MAX_ARCH_SIZE = 12582912
 
-
+DETECTOR = None
 
 
 
@@ -207,7 +207,7 @@ def MegaScan(image):
 			imgMS = imgMS[:,:,0:3]
 
 	
-	if app.config['MEGA_MODEL'] == None:
+	if DETECTOR == None:
 
 		print('loading TF...')
 
@@ -217,17 +217,17 @@ def MegaScan(image):
 		os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 		# LOADS THE MS MEGADETECTOR
-		app.config['MEGA_MODEL'] = tf.compat.v1.Graph()
-		with app.config['MEGA_MODEL'].as_default():
+		DETECTOR = tf.compat.v1.Graph()
+		with DETECTOR.as_default():
 			od_graph_def = tf.compat.v1.GraphDef()
 			with tf.io.gfile.GFile('./models/megadetector_v3.pb', 'rb') as fid:
 				serialized_graph = fid.read()
 				od_graph_def.ParseFromString(serialized_graph)
 				tf.import_graph_def(od_graph_def, name='')
-		print('loaded!')
+		print('detector loaded!')
 
 
-	boxes,scores,classes,images = generate_detections(app.config['MEGA_MODEL'], imgMS)
+	boxes,scores,classes,images = generate_detections(DETECTOR, imgMS)
 	boxes = boxes[0]
 	scores = scores[0]
 	classes = classes[0]
