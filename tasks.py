@@ -63,12 +63,11 @@ def task_largefilestore(self, fulldata, metadata):
 @celery.task(bind=True, name='mira.detect')
 def task_detect(self, userinfo, imageinfo):
 
+	c = 0
+	for i in range(1000000):
+		c += i
 
-
-
-
-
-
+	print(c)
 	
 	return 0
 
