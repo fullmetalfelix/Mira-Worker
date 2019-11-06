@@ -50,14 +50,122 @@ MAX_ARCH_SIZE = 12582912
 
 
 @celery.task(bind=True, name='mira.detect')
-def task_detect(self, userinfo, imageinfo):
+def task_detect(self, imgID):
+
+
+	imageinfo = db.images.find_one({'_id': imgID}, {'thumb': 0})
 
 	# do the TF run
 	crops = MegaScan(imageinfo)
 
+	if len(crops) != 0:
+
+		# load our scanners -------------------------------------
+		mfile = "models/FLP_Foxer_Model1.0-aug.82-0.3369-0.8745"
+		json_file = open(mfile + ".json", 'r'); loaded_model_json = json_file.read(); json_file.close()
+		modelL = model_from_json(loaded_model_json)
+		modelL.load_weights(mfile + ".hdf5")
+		modelL = {
+			'model': modelL,
+			'name': 'Foxer',
+			'fullname': 'FLP_Foxer_Model1.0-aug.82-0.3369-0.8745',
+			'classes': ['fox', 'skunk', 'empty']
+		}
+
+
+
+		mfile = "models/model-ratter-20181130"
+		json_file = open(mfile + ".json", 'r'); loaded_model_json = json_file.read(); json_file.close()
+		modelS = model_from_json(loaded_model_json)
+		modelS.load_weights(mfile + ".hdf5")
+		modelS = {
+			'model': modelS,
+			'name': 'ratter',
+			'fullname': 'model-ratter-20181130',
+			'classes': ['rodent', 'empty']
+		}
+		# -------------------------------------------------------
+
+
+
+		# prepare the image for our scanners --------------------
+		dataurl = imageinfo['file']; # print(dataurl[0:25])
+		dataurl = dataurl.split(';base64,')[1]
+		dataurl = base64.b64decode(dataurl)
+		image = Image.open(BytesIO(dataurl))
+		isGray = True
+
+		# determine if the image is color or BW
+		# this is done by checking pixels in a line in the middle of the image
+		# if the RBG channels are the same, then it is grayscale
+
+		for i in range(image.size[0]):
+			c = image.getpixel((i,image.size[1] / 2))
+			c = np.asarray(c)
+			mean = np.mean(c)
+			tmp = True
+			for b in c: tmp = tmp and (b == mean)
+			if not tmp:
+				isGray = False
+				break
+	    
+		# colour images will be converted to grayscale for now
+		if not isGray: image = image.convert('L')
+
+		W, H = image.size
+		# -------------------------------------------------------
+
+
+		# take each crop and send it to our classifiers
+		for cropinfo in crops:
+
+			box = cropinfo['coords']
+			boxpx = [int(box[1]*W), int(box[0]*H), int(box[3]*W), int(box[2]*H)]
+			cropresults = []
+
+			for model in [modelL, modelS]:
+
+				input_shape = model['model'].get_layer(index=0).input_shape[2:]
+				insize = (1,1, input_shape[0], input_shape[1])
+
+				crp = image.crop(boxpx)
+				crp = crp.resize(input_shape, Image.LANCZOS)
+
+				# this procedure has to be the same as the one in datagen used for training
+				# the pixel data is numerically shifted around its mean and scaled by its stdev
+				crp = np.asarray(crp).astype(np.float32)
+				crp /= 255
+				if len(crp.shape) == 3: crp = crp[:,:,0]
+
+				crp -= np.mean(crp)
+				stdv = np.std(crp)
+				if stdv == 0: stdv = 1
+				crp /= stdv
+
+				cropdata = np.zeros(insize, dtype=np.float32)
+				cropdata[0,0,] = crp
+
+				pred = model['model'].predict(cropdata, verbose=0)[0]
+				
+				output = {}
+				for i in range(len(pred)): output[model['classes'][i]] = pred[i]
+
+				analysis = {
+					'name': model['name'],
+					'fullname': model['fullname'],
+					'result': output,
+				}
+				cropresults.append(analysis)
+			
+			cropinfo['analysis'] = cropresults
+
+
 	# code here means the image is still there most likely
 	# store crops in the database
-	edits = {'crops': crops}
+	edits = {
+		'crops': crops,
+		'phase': 10, # detector done
+	}
 	if len(crops) == 0: edits['phase'] = -10
 
 	db.images.update_one({'_id': imageinfo['_id']},
