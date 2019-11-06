@@ -169,12 +169,13 @@ def task_detect(self, imgID):
 	}
 	if len(crops) == 0: edits['phase'] = -10
 
+	# kill the task associated with this image
+	db.tasks.delete_one({'ctask': task_detect.request.id})
+
+	# update the image
 	db.images.update_one({'_id': imageinfo['_id']},
 		{'$set': edits}
 	)
-
-	# kill the task associated with this image
-	db.tasks.delete_one({'ctask': task_detect.request.id})
 
 	return 0
 
