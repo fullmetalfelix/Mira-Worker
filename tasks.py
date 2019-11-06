@@ -149,7 +149,7 @@ def task_detect(self, imgID):
 				pred = model['model'].predict(cropdata, verbose=0)[0]
 				
 				output = {}
-				for i in range(len(pred)): output[model['classes'][i]] = pred[i]
+				for i in range(len(pred)): output[model['classes'][i]] = float(pred[i])
 
 				analysis = {
 					'name': model['name'],
