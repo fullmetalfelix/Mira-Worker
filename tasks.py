@@ -15,6 +15,7 @@ from io import StringIO, BytesIO
 import base64
 
 import tensorflow as tf
+from keras.models import model_from_json
 from PIL import Image
 
 
