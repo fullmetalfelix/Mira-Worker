@@ -172,6 +172,9 @@ def task_detect(self, imgID):
 		{'$set': edits}
 	)
 
+	# kill the task associated with this image
+	db.tasks.delete_one({'ctask': task_detect.request.id})
+
 	return 0
 
 
