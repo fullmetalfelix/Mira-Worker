@@ -2,7 +2,7 @@ absl-py==0.8.1
 amqp==2.5.1
 astor==0.8.0
 billiard==3.6.1.0
-celery==4.3.0
+celery==5.2.2
 gast==0.3.2
 google-pasta==0.1.8
 grpcio==1.24.3
